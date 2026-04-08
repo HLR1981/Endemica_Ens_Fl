@@ -71,7 +71,7 @@ if archivo:
     img = Image.open(archivo)
     st.image(img, width=400)
     
-    img_resized = img.resize((160, 160))
+    img_resized = img.resize((224, 224))
     img_array = tf.keras.utils.img_to_array(img_resized)
     img_array = tf.expand_dims(img_array, 0)
     
