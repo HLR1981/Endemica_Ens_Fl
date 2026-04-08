@@ -61,7 +61,7 @@ especies_info = {
 
 @st.cache_resource
 def load_model():
-    return tf.keras.models.load_model('modelo_flora_ensenada.keras')
+    return tf.keras.models.load_model('Endemica_Ens_Fl/modelo_flora_ensenada.keras')
 
 model = load_model()
 
