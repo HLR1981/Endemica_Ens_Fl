@@ -60,7 +60,6 @@ if archivo:
             "maguey de costa_agave_shawii",    # Maguey
             "rosa de castlla_rosa_minutifolia"  # Rosa al final
         ]
-        ]
         
         idx = np.argmax(score)
         confianza = 100 * np.max(score)
