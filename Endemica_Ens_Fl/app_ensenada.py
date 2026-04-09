@@ -53,12 +53,13 @@ if archivo:
         
         # EL ORDEN QUE FUNCIONÓ:
         nombres_lista = [
-            "encelia farinosa",              # 0
-            "encino_quercus_agrifolia",      # 1
-            "lila_california_ceanothus",     # 2
-            "rosa de castlla_rosa_minutifolia", # 3
-            "salvia de munz_salvia_munzii",   # 4
-            "maguey de costa_agave_shawii"    # 5
+            "encelia farinosa", 
+            "encino_quercus_agrifolia", 
+            "lila_california_ceanothus", 
+            "salvia de munz_salvia_munzii",     # Salvia
+            "maguey de costa_agave_shawii",    # Maguey
+            "rosa de castlla_rosa_minutifolia"  # Rosa al final
+        ]
         ]
         
         idx = np.argmax(score)
