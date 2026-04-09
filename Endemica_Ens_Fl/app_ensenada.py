@@ -3,7 +3,7 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 
-# --- 1. CONFIGURACIÓN ---
+# --- CONFIGURACIÓN ---
 st.set_page_config(page_title="EndémicaEns", page_icon="🌸")
 
 st.markdown("""
@@ -17,24 +17,24 @@ st.markdown("""
 st.title("🌸 EndémicaEns: Flora de Ensenada")
 st.markdown("### Identificador inteligente de plantas nativas")
 
-# --- 2. DICCIONARIO DE INFORMACIÓN ---
+# --- DICCIONARIO DE INFORMACIÓN ---
 especies_info = {
     "encelia farinosa": {"nombre": "Incienso / Encelia", "info": "Arbusto de flores amarillas nativo de zonas áridas."},
     "encino_quercus_agrifolia": {"nombre": "Encino Californiano", "info": "Árbol majestuoso y protegido de Ensenada."},
     "lila_california_ceanothus": {"nombre": "Lila de California", "info": "Arbusto con hermosas flores azules o moradas."},
     "maguey de costa_agave_shawii": {"nombre": "Maguey de Costa", "info": "Suculenta protegida que crece cerca del mar."},
     "rosa de castlla_rosa_minutifolia": {"nombre": "Rosa de Castilla", "info": "Planta endémica única de Baja California."},
-    "salvia de munz_salvia_munzii": {"nombre": "Salvia de Munz", "info": "Arbusto aromático de flores moradas muy querido."}
+    "salvia de munz_salvia_munzii": {"nombre": "Salvia de Munz", "info": "Arbusto aromático de flores moradas."}
 }
 
-# --- 3. CARGA DEL MODELO ---
+# --- CARGA DEL MODELO ---
 @st.cache_resource
 def load_model():
     return tf.keras.models.load_model('Endemica_Ens_Fl/modelo_flora_ensenada.keras')
 
 model = load_model()
 
-# --- 4. INTERFAZ ---
+# --- INTERFAZ ---
 st.write("---")
 archivo = st.file_uploader("🌿 Sube una foto de la planta", type=["jpg", "png", "jpeg", "webp"])
 
@@ -42,17 +42,16 @@ if archivo:
     img = Image.open(archivo).convert("RGB")
     st.image(img, width=400, caption="Imagen seleccionada")
     
-    # Procesamiento exacto
+    # Procesamiento (160x160 y normalización)
     img_resized = img.resize((160, 160))
     img_array = tf.keras.utils.img_to_array(img_resized) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
     
-    # --- 5. PREDICCIÓN ---
     with st.spinner('Identificando...'):
         pred = model.predict(img_array)
         score = tf.nn.softmax(pred[0])
         
-        # ORDEN CORREGIDO SEGÚN TUS PRUEBAS
+        # EL ORDEN QUE FUNCIONÓ:
         nombres_lista = [
             "encelia farinosa",              # 0
             "encino_quercus_agrifolia",      # 1
@@ -65,11 +64,10 @@ if archivo:
         idx = np.argmax(score)
         confianza = 100 * np.max(score)
 
-    # --- 6. RESULTADOS ---
-    # Bajamos el umbral a 40% para que sea más amigable en la demo
-    if confianza < 40.0:
+    # --- RESULTADOS ---
+    if confianza < 45.0:
         st.error(f"### ⚠️ Imagen desconocida ({confianza:.2f}%)")
-        st.info("La confianza es baja. Prueba tomando la foto más cerca.")
+        st.info("La IA no está segura. Prueba acercándote más a la planta.")
     else:
         clave = nombres_lista[idx]
         info = especies_info[clave]
