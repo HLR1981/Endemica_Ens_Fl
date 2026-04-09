@@ -98,7 +98,7 @@ if archivo:
     st.image(img, width=400, caption="Imagen seleccionada")
     
     # PASO B: Preprocesamiento exacto
-    img_resized = img.resize((224, 224))
+    img_resized = img.resize((160, 160))
     img_array = tf.keras.utils.img_to_array(img_resized)
     
     # PASO C: Normalización (CRÍTICO para evitar el error de la palmera/salvia)
