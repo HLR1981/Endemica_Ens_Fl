@@ -122,7 +122,7 @@ if archivo:
 
             # --- 6. RESULTADOS ---
             # Si la confianza es menor a 35%, consideramos que no la conoce
-            if confianza < 35.0:
+            if confianza < 60.0:
                 st.error("### ⚠️ Imagen desconocida")
                 st.write(f"La IA no está segura ({confianza:.2f}%).")
                 st.info("Intenta que la foto esté más enfocada o usa una de las 6 plantas de la guía.")
