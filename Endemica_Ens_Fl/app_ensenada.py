@@ -3,10 +3,9 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 
-# --- 1. CONFIGURACIÓN DE PÁGINA ---
+# --- 1. CONFIGURACIÓN ---
 st.set_page_config(page_title="EndémicaEns", page_icon="🌸")
 
-# Estilo visual
 st.markdown("""
     <style>
     .stApp { background-color: #FDFBF0; }
@@ -20,36 +19,32 @@ st.markdown("### Identificador inteligente de plantas nativas")
 
 # --- 2. DICCIONARIO DE INFORMACIÓN ---
 especies_info = {
-    "encelia farinosa": {"nombre": "Incienso / Encelia", "info": "Arbusto de flores amarillas."},
-    "encino_quercus_agrifolia": {"nombre": "Encino Californiano", "info": "Árbol majestuoso regional."},
-    "lila_california_ceanothus": {"nombre": "Lila de California", "info": "Flores azules o moradas."},
-    "maguey de costa_agave_shawii": {"nombre": "Maguey de Costa", "info": "Suculenta protegida frente al mar."},
-    "rosa de castlla_rosa_minutifolia": {"nombre": "Rosa de Castilla", "info": "Joya endémica de Ensenada."},
-    "salvia de munz_salvia_munzii": {"nombre": "Salvia de Munz", "info": "Arbusto aromático de flores moradas."}
+    "encelia farinosa": {"nombre": "Incienso / Encelia", "info": "Arbusto de flores amarillas nativo de zonas áridas."},
+    "encino_quercus_agrifolia": {"nombre": "Encino Californiano", "info": "Árbol majestuoso y protegido de Ensenada."},
+    "lila_california_ceanothus": {"nombre": "Lila de California", "info": "Arbusto con hermosas flores azules o moradas."},
+    "maguey de costa_agave_shawii": {"nombre": "Maguey de Costa", "info": "Suculenta protegida que crece cerca del mar."},
+    "rosa de castlla_rosa_minutifolia": {"nombre": "Rosa de Castilla", "info": "Planta endémica única de Baja California."},
+    "salvia de munz_salvia_munzii": {"nombre": "Salvia de Munz", "info": "Arbusto aromático de flores moradas muy querido."}
 }
 
 # --- 3. CARGA DEL MODELO ---
 @st.cache_resource
 def load_model():
-    # Asegúrate de que esta ruta sea la correcta en tu GitHub
     return tf.keras.models.load_model('Endemica_Ens_Fl/modelo_flora_ensenada.keras')
 
-try:
-    model = load_model()
-except Exception as e:
-    st.error(f"Error al cargar el modelo: {e}")
+model = load_model()
 
-# --- 4. INTERFAZ DE CARGA ---
+# --- 4. INTERFAZ ---
 st.write("---")
 archivo = st.file_uploader("🌿 Sube una foto de la planta", type=["jpg", "png", "jpeg", "webp"])
 
 if archivo:
-    # Preprocesamiento: Convertir a RGB y redimensionar a 160x160
     img = Image.open(archivo).convert("RGB")
     st.image(img, width=400, caption="Imagen seleccionada")
     
+    # Procesamiento exacto
     img_resized = img.resize((160, 160))
-    img_array = tf.keras.utils.img_to_array(img_resized) / 255.0 # Normalización
+    img_array = tf.keras.utils.img_to_array(img_resized) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
     
     # --- 5. PREDICCIÓN ---
@@ -57,32 +52,27 @@ if archivo:
         pred = model.predict(img_array)
         score = tf.nn.softmax(pred[0])
         
-        # Este orden es el que vimos en tu carpeta 'train'
+        # ORDEN CORREGIDO SEGÚN TUS PRUEBAS
         nombres_lista = [
             "encelia farinosa",              # 0
             "encino_quercus_agrifolia",      # 1
             "lila_california_ceanothus",     # 2
-            "maguey de costa_agave_shawii",  # 3
-            "rosa de castlla_rosa_minutifolia", # 4
-            "salvia de munz_salvia_munzii"   # 5
+            "rosa de castlla_rosa_minutifolia", # 3
+            "salvia de munz_salvia_munzii",   # 4
+            "maguey de costa_agave_shawii"    # 5
         ]
         
         idx = np.argmax(score)
         confianza = 100 * np.max(score)
 
-    # --- LÍNEA DE TRUCO (DEBUG) ---
-    # Esto nos dirá qué número asigna el modelo a cada foto
-    st.warning(f"DEBUG: El modelo detectó el Índice: {idx}")
-
     # --- 6. RESULTADOS ---
-    if confianza < 45.0: # Umbral de seguridad
+    # Bajamos el umbral a 40% para que sea más amigable en la demo
+    if confianza < 40.0:
         st.error(f"### ⚠️ Imagen desconocida ({confianza:.2f}%)")
-        st.info("La confianza es baja. Intenta acercar más la cámara a la planta.")
+        st.info("La confianza es baja. Prueba tomando la foto más cerca.")
     else:
-        # Buscamos la información usando el índice detectado
-        clase_detectada = nombres_lista[idx]
-        info = especies_info[clase_detectada]
-        
+        clave = nombres_lista[idx]
+        info = especies_info[clave]
         st.success(f"### Identificado como: {info['nombre']}")
-        st.write(f"**Confianza:** {confianza:.2f}%")
+        st.write(f"**Nivel de confianza:** {confianza:.2f}%")
         st.info(f"**Información:** {info['info']}")
