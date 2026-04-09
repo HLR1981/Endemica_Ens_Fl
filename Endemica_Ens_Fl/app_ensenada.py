@@ -110,7 +110,7 @@ if archivo:
         confianza = 100 * np.max(score)
 
     # --- 6. RESULTADOS ---
-    if confianza < 50.0:
+    if confianza < 65.0:
         st.error(f"### ⚠️ Imagen desconocida ({confianza:.2f}%)")
         st.info("La IA no está segura. Prueba acercándote más a la flor.")
     else:
