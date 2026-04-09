@@ -6,7 +6,7 @@ import numpy as np
 # --- 1. CONFIGURACIÓN DE PÁGINA Y DISEÑO ---
 st.set_page_config(page_title="EndémicaEns", page_icon="🌸")
 
-# CSS para que se vea "viva" la app
+# Estilo para que se vea más profesional y "viva"
 st.markdown("""
     <style>
     .stApp {
@@ -14,6 +14,7 @@ st.markdown("""
     }
     h1 {
         color: #2D4A22 !important;
+        font-family: 'Helvetica', sans-serif;
     }
     .stAlert {
         border-radius: 15px;
@@ -22,7 +23,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.title("🌸 EndémicaEns: Flora de Ensenada")
-st.markdown("### Identificador de plantas nativas")
+st.markdown("### Identificador inteligente de plantas nativas")
 
 # --- 2. DICCIONARIO DE ESPECIES ---
 especies_info = {
@@ -79,7 +80,7 @@ especies_info = {
 # --- 3. CARGA DEL MODELO ---
 @st.cache_resource
 def load_model():
-    # Asegúrate de que esta ruta sea la correcta en tu carpeta de GitHub
+    # Ruta al archivo .keras dentro de tu repositorio
     return tf.keras.models.load_model('Endemica_Ens_Fl/modelo_flora_ensenada.keras')
 
 try:
@@ -92,41 +93,51 @@ st.write("---")
 archivo = st.file_uploader("🌿 Sube una foto o captura desde tu cámara", type=["jpg", "png", "jpeg", "webp"])
 
 if archivo:
-    # Abrir y forzar formato RGB para evitar errores de canales (como en la palmera)
+    # PASO A: Abrir y convertir a RGB (Esto evita el ValueError con transparencias)
     img = Image.open(archivo).convert("RGB")
     st.image(img, width=400, caption="Imagen seleccionada")
     
-    # Preprocesamiento exacto para el modelo
+    # PASO B: Preprocesamiento exacto
     img_resized = img.resize((224, 224))
     img_array = tf.keras.utils.img_to_array(img_resized)
-    img_array = img_array / 255.0  # Normalización (0 a 1)
-    img_array = tf.expand_dims(img_array, 0) # Crear el bloque para el modelo
     
-    # Predicción
-    with st.spinner('Identificando...'):
-        pred = model.predict(img_array)
-        # Usamos softmax si el modelo no tiene la capa integrada, 
-        # o simplemente sacamos el índice más alto.
-        score = tf.nn.softmax(pred[0])
-        
-        nombres_carpetas = sorted(list(especies_info.keys()))
-        clase_detectada = nombres_carpetas[np.argmax(score)]
-        confianza = 100 * np.max(score)
+    # PASO C: Normalización (CRÍTICO para evitar el error de la palmera/salvia)
+    img_array = img_array / 255.0 
+    
+    # PASO D: Ajustar forma a (1, 224, 224, 3)
+    img_array = np.expand_dims(img_array, axis=0)
+    
+    # --- 5. PREDICCIÓN ---
+    with st.spinner('Analizando planta...'):
+        try:
+            pred = model.predict(img_array)
+            # Aplicamos softmax para obtener probabilidades claras
+            score = tf.nn.softmax(pred[0])
+            
+            # Obtener la clase con mayor probabilidad
+            nombres_carpetas = sorted(list(especies_info.keys()))
+            indice_maximo = np.argmax(score)
+            clase_detectada = nombres_carpetas[indice_maximo]
+            confianza = 100 * np.max(score)
 
-    # --- 5. RESULTADOS CON FILTRO DE CONFIANZA ---
-    if confianza < 40.0:
-        st.error("### ⚠️ Imagen desconocida")
-        st.write(f"La confianza es muy baja ({confianza:.2f}%).")
-        st.info("Sugerencia: Intenta tomar la foto más cerca de la planta o con mejor iluminación.")
-    else:
-        info = especies_info[clase_detectada]
-        st.success(f"### Identificado como: {info['nombre']}")
-        st.write(f"**Nivel de confianza:** {confianza:.2f}%")
+            # --- 6. RESULTADOS ---
+            # Si la confianza es menor a 35%, consideramos que no la conoce
+            if confianza < 35.0:
+                st.error("### ⚠️ Imagen desconocida")
+                st.write(f"La IA no está segura ({confianza:.2f}%).")
+                st.info("Intenta que la foto esté más enfocada o usa una de las 6 plantas de la guía.")
+            else:
+                info = especies_info[clase_detectada]
+                st.success(f"### Identificado como: {info['nombre']}")
+                st.write(f"**Nivel de confianza:** {confianza:.2f}%")
+                
+                with st.expander("📖 Ver Detalles Técnicos y Cuidados"):
+                    st.write(f"**Nombre Científico:** *{info['cientifico']}*")
+                    st.write(f"**Estado:** {info['estado']}")
+                    st.divider()
+                    st.write(f"**Descripción:** {info['info']}")
+                    st.warning(f"**💡 Cuidados:** {info['cuidados']}")
+                    st.info(f"**🗓️ Época de plantación:** {info['plantacion']}")
         
-        with st.expander("📖 Ver Detalles Técnicos y Cuidados"):
-            st.write(f"**Nombre Científico:** *{info['cientifico']}*")
-            st.write(f"**Estado en la región:** {info['estado']}")
-            st.divider()
-            st.write(f"**Descripción:** {info['info']}")
-            st.warning(f"**💡 Cuidados:** {info['cuidados']}")
-            st.info(f"**🗓️ Época ideal de plantación:** {info['plantacion']}")
+        except Exception as e:
+            st.error(f"Error técnico durante la predicción: {e}")
