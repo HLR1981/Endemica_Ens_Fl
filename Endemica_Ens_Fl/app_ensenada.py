@@ -9,60 +9,22 @@ st.set_page_config(page_title="EndémicaEns", page_icon="🌸")
 # --- ESTILOS VISUALES ---
 st.markdown("""
 <style>
-
-/* Fondo con degradado */
 .stApp {
     background: linear-gradient(180deg, #0E1117 0%, #1a1d29 100%);
 }
-
-/* Título */
 h1 {
     color: #FF4B8B;
     text-align: center;
-    font-size: 32px;
 }
-
-/* Subtítulo */
 .subtitle {
     text-align: center;
     color: #CCCCCC;
-    font-size: 16px;
 }
-
-/* Texto general */
-p, label {
-    color: #EAEAEA;
-}
-
-/* Upload */
 .stFileUploader {
     border: 2px dashed #FF4B8B;
     border-radius: 12px;
     padding: 10px;
 }
-
-/* Botones */
-.stButton>button {
-    background-color: #FF4B8B;
-    color: white;
-    border-radius: 12px;
-    font-size: 16px;
-}
-
-/* Resultado */
-.result-box {
-    background-color: #1f3d2b;
-    padding: 15px;
-    border-radius: 12px;
-    margin-top: 10px;
-}
-
-/* Expanders */
-.streamlit-expanderHeader {
-    font-size: 16px;
-    color: #FF4B8B;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -70,13 +32,13 @@ p, label {
 st.markdown("<h1>🌸 EndémicaEns</h1>", unsafe_allow_html=True)
 st.markdown("<p class='subtitle'>Flora de Ensenada</p>", unsafe_allow_html=True)
 
-# --- DICCIONARIO DE ESPECIES ---
+# --- DICCIONARIO ---
 especies_info = {
     "encelia farinosa": {
         "nombre": "Incienso / Encelia",
         "cientifico": "Encelia farinosa",
         "estado": "Nativa",
-        "info": "Arbusto de flores amarillas. Sus hojas grisáceas reflejan la luz para sobrevivir al calor.",
+        "info": "Arbusto de flores amarillas.",
         "cuidados": "Muy poca agua, pleno sol.",
         "plantacion": "Primavera."
     },
@@ -84,40 +46,40 @@ especies_info = {
         "nombre": "Encino Californiano",
         "cientifico": "Quercus agrifolia",
         "estado": "Nativa / Protegida",
-        "info": "Árbol majestuoso de los arroyos de Ensenada. Es fundamental para el ecosistema local.",
-        "cuidados": "Evitar exceso de riego en el tronco durante el verano.",
+        "info": "Árbol fundamental para el ecosistema.",
+        "cuidados": "Evitar exceso de riego.",
         "plantacion": "Otoño."
     },
     "lila_california_ceanothus": {
         "nombre": "Lila de California",
         "cientifico": "Ceanothus spp.",
         "estado": "Nativa Regional",
-        "info": "Famosa por sus racimos de flores azules o moradas. Es muy resistente y atrae a muchas mariposas.",
-        "cuidados": "Requiere poco riego una vez establecida y suelo bien drenado.",
+        "info": "Flores azules o moradas.",
+        "cuidados": "Poco riego.",
         "plantacion": "Otoño o Invierno."
     },
     "maguey de costa_agave_shawii": {
         "nombre": "Maguey de Costa",
         "cientifico": "Agave shawii",
         "estado": "Nativa Regional",
-        "info": "Suculenta protegida que crece frente al mar. Sus flores atraen a murciélagos y aves.",
-        "cuidados": "Suelo arenoso y mucha brisa marina.",
+        "info": "Suculenta protegida.",
+        "cuidados": "Suelo arenoso.",
         "plantacion": "Invierno."
     },
     "rosa de castlla_rosa_minutifolia": {
         "nombre": "Rosa de Castilla",
         "cientifico": "Rosa minutifolia",
         "estado": "Endémica de BC",
-        "info": "La joya de Ensenada. Pequeña, espinosa y con flores rosas vibrantes.",
-        "cuidados": "Cero riego una vez establecida.",
-        "plantacion": "Temporada de lluvias."
+        "info": "Flor rosa vibrante.",
+        "cuidados": "Sin riego.",
+        "plantacion": "Lluvias."
     },
     "salvia de munz_salvia_munzii": {
         "nombre": "Salvia de Munz",
         "cientifico": "Salvia munzii",
         "estado": "Nativa Regional",
-        "info": "Arbusto aromático de flores moradas, esencial para los polinizadores de la zona.",
-        "cuidados": "Sol directo y suelo bien drenado.",
+        "info": "Flores moradas.",
+        "cuidados": "Sol directo.",
         "plantacion": "Primavera."
     }
 }
@@ -129,37 +91,52 @@ def load_model():
 
 model = load_model()
 
-# --- SUBIDA DE ARCHIVO ---
+# 🔍 DEBUG (puedes quitar luego)
+st.write("Input del modelo:", model.input_shape)
+
+# --- UPLOAD ---
 archivo = st.file_uploader("📸 Sube una foto de la flora local", type=["jpg", "png", "jpeg", "webp"])
 
 if archivo:
-    img = Image.open(archivo).convert("RGB")
-    st.image(img, use_column_width=True)
+    try:
+        # Convertir imagen correctamente
+        img = Image.open(archivo).convert("RGB")
+        st.image(img, use_column_width=True)
 
-    img_resized = img.resize((224, 224))
-    img_array = tf.keras.utils.img_to_array(img_resized)
-    img_array = tf.expand_dims(img_array, 0)
+        # 🔧 AJUSTAR TAMAÑO (IMPORTANTE)
+        img_resized = img.resize((224, 224))  # cambia si tu modelo usa otro tamaño
 
-    pred = model.predict(img_array)
-    score = tf.nn.softmax(pred[0])
+        # Convertir a array
+        img_array = np.array(img_resized).astype("float32")
 
-    nombres_carpetas = sorted(list(especies_info.keys()))
-    clase_detectada = nombres_carpetas[np.argmax(score)]
-    confianza = 100 * np.max(score)
+        # Normalizar
+        img_array = img_array / 255.0
 
-    info = especies_info[clase_detectada]
+        # Expandir dimensiones
+        img_array = np.expand_dims(img_array, axis=0)
 
-    # --- RESULTADO BONITO ---
-    st.markdown(f"""
-    <div class="result-box">
-        <h3 style="color:#00FFAA;">{info['nombre']}</h3>
-        <p><b>Confianza:</b> {confianza:.2f}%</p>
-    </div>
-    """, unsafe_allow_html=True)
+        # 🔍 DEBUG
+        st.write("Shape enviado:", img_array.shape)
 
-    # --- DETALLES ---
-    with st.expander("📖 Ver Detalles Técnicos"):
-        st.write(f"**Científico:** *{info['cientifico']}*")
-        st.write(f"**Estado:** {info['estado']}")
-        st.info(info['info'])
-        st.warning(f"**Cuidados:** {info['cuidados']}")
+        # Predicción
+        pred = model.predict(img_array)
+        score = tf.nn.softmax(pred[0])
+
+        nombres_carpetas = sorted(list(especies_info.keys()))
+        clase_detectada = nombres_carpetas[np.argmax(score)]
+        confianza = 100 * np.max(score)
+
+        info = especies_info[clase_detectada]
+
+        st.success(f"{info['nombre']}")
+        st.write(f"**Confianza:** {confianza:.2f}%")
+
+        with st.expander("📖 Detalles"):
+            st.write(f"**Científico:** {info['cientifico']}")
+            st.write(f"**Estado:** {info['estado']}")
+            st.info(info['info'])
+            st.warning(f"Cuidados: {info['cuidados']}")
+
+    except Exception as e:
+        st.error("⚠️ Error procesando la imagen o el modelo")
+        st.text(str(e))
