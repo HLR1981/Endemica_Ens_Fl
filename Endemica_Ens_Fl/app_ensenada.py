@@ -133,7 +133,7 @@ model = load_model()
 archivo = st.file_uploader("📸 Sube una foto de la flora local", type=["jpg", "png", "jpeg", "webp"])
 
 if archivo:
-    img = Image.open(archivo)
+    img = Image.open(archivo).convert("RGB")
     st.image(img, use_column_width=True)
 
     img_resized = img.resize((224, 224))
