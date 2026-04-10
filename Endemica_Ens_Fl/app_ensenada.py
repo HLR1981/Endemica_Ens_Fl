@@ -9,22 +9,70 @@ st.set_page_config(page_title="EndémicaEns", page_icon="🌸")
 # --- ESTILOS VISUALES ---
 st.markdown("""
 <style>
+
+/* Fondo */
 .stApp {
     background: linear-gradient(180deg, #0E1117 0%, #1a1d29 100%);
 }
+
+/* Título */
 h1 {
     color: #FF4B8B;
     text-align: center;
+    font-size: 34px;
+    font-weight: bold;
 }
+
+/* Subtítulo */
 .subtitle {
     text-align: center;
-    color: #CCCCCC;
+    color: #FFFFFF;
+    font-size: 18px;
+    margin-bottom: 20px;
 }
+
+/* Labels */
+label, .stMarkdown, .stText {
+    color: #FFFFFF !important;
+    font-size: 16px;
+}
+
+/* Texto */
+p {
+    color: #EAEAEA;
+}
+
+/* Upload */
 .stFileUploader {
     border: 2px dashed #FF4B8B;
     border-radius: 12px;
     padding: 10px;
 }
+
+/* Resultado */
+.result-box {
+    background-color: #1f3d2b;
+    padding: 15px;
+    border-radius: 12px;
+    margin-top: 10px;
+    color: white;
+}
+
+/* Expanders */
+.streamlit-expanderHeader {
+    color: #FF4B8B !important;
+    font-weight: bold;
+}
+
+/* Mensajes */
+.stSuccess {
+    color: #00FFAA;
+}
+
+.stError {
+    color: #FF6B6B;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -91,32 +139,26 @@ def load_model():
 
 model = load_model()
 
-# 🔍 DEBUG (puedes quitar luego)
-st.write("Input del modelo:", model.input_shape)
-
 # --- UPLOAD ---
 archivo = st.file_uploader("📸 Sube una foto de la flora local", type=["jpg", "png", "jpeg", "webp"])
 
 if archivo:
     try:
-        # Convertir imagen correctamente
+        # Convertir imagen
         img = Image.open(archivo).convert("RGB")
         st.image(img, use_column_width=True)
 
-        # 🔧 AJUSTAR TAMAÑO (IMPORTANTE)
-        img_resized = img.resize((224, 224))  # cambia si tu modelo usa otro tamaño
+        # 🔥 TAMAÑO CORRECTO (160x160)
+        img_resized = img.resize((160, 160))
 
         # Convertir a array
         img_array = np.array(img_resized).astype("float32")
 
-        # Normalizar
-        img_array = img_array / 255.0
+        # 🔥 Preprocesamiento MobileNetV2
+        img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array)
 
         # Expandir dimensiones
         img_array = np.expand_dims(img_array, axis=0)
-
-        # 🔍 DEBUG
-        st.write("Shape enviado:", img_array.shape)
 
         # Predicción
         pred = model.predict(img_array)
@@ -128,10 +170,16 @@ if archivo:
 
         info = especies_info[clase_detectada]
 
-        st.success(f"{info['nombre']}")
-        st.write(f"**Confianza:** {confianza:.2f}%")
+        # --- RESULTADO BONITO ---
+        st.markdown(f"""
+        <div class="result-box">
+            <h3 style="color:#00FFAA;">{info['nombre']}</h3>
+            <p><b>Confianza:</b> {confianza:.2f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        with st.expander("📖 Detalles"):
+        # --- DETALLES ---
+        with st.expander("📖 Ver Detalles Técnicos"):
             st.write(f"**Científico:** {info['cientifico']}")
             st.write(f"**Estado:** {info['estado']}")
             st.info(info['info'])
